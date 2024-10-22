@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Activity Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Daily Activity Tracker</h1>
+
+
+    <div class="current-time">
+        <h2>Current Time: <span id="current-time"></span></h2>
+    </div>
+
+
+    <div class="content">
+        <div class="left-panel">
+            <canvas id="activity-chart"></canvas>
+            <div class="timers">
+                <h3>Current Mode: <span id="current-mode">Resting</span></h3>
+                <p>Studying: <span id="study-time">0h 0m 0s</span></p>
+                <p>Productive Time: <span id="productive-time">0h 0m 0s</span></p> <!-- New Mode -->
+                <p>Resting: <span id="rest-time">0h 0m 0s</span></p>
+                <p>Sleeping: <span id="sleep-time">0h 0m 0s</span></p>
+                <p id="current-study">Current Study: 0h 0m 0s</p>
+                <p id="max-study">Max Study: 0h 0m 0s</p>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div class="buttons">
+                <button onclick="startMode('study')">Start Studying</button>
+                <button onclick="startMode('productive')">Start Productive Time</button> <!-- New Mode -->
+                <button onclick="startMode('rest')">Start Resting</button>
+                <button onclick="startMode('sleep')">Start Sleeping</button>
+                <button id="clear-button">Clear Data</button>
+                <button id="reset-max-study">Reset Max Study Time</button>
+            </div>
+
+
+
+            <div class="schedule">
+                <h3>Set Sleep Schedule</h3>
+                <label for="sleep-start">Sleep Start:</label>
+                <input type="time" id="sleep-start">
+                <label for="sleep-end">Sleep End:</label>
+                <input type="time" id="sleep-end">
+                <button id="set-sleep-schedule">Set Sleep Schedule</button>
+                <p id="sleep-schedule-error" style="color: red;"></p>
+            </div>
+
+            <div class="manual-study-slot">
+                <h3>Add Manual Study Slot</h3>
+                <label for="manual-study-start">Start Time:</label>
+                <input type="time" id="manual-study-start">
+                <label for="manual-study-end">End Time:</label>
+                <input type="time" id="manual-study-end">
+                <button id="add-study-slot">Add Study Slot</button>
+                <p id="manual-study-error" style="color: red;"></p>
+            </div>
+
+            <div class="theme-toggle">
+                <button id="toggle-theme">Switch to Dark Mode</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js" defer></script>
+</body>
+</html>
