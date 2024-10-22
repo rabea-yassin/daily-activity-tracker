@@ -264,10 +264,11 @@ function updateChart() {
 }
 
 // Set the sleep schedule and validate input
-document.getElementById('set-sleep-schedule').addEventListener('click', () => {
-    const start = document.getElementById('sleep-start').value;
-    const end = document.getElementById('sleep-end').value;
-    const errorElement = document.getElementById('sleep-schedule-error');
+
+function addSleepTimeSlot() {
+    const start = document.getElementById('time-start').value;
+    const end = document.getElementById('time-end').value;
+    const errorElement = document.getElementById('time-slot-error');
 
     if (!start || !end) {
         errorElement.textContent = "Please provide both start and end times.";
@@ -284,7 +285,8 @@ document.getElementById('set-sleep-schedule').addEventListener('click', () => {
 
     errorElement.textContent = "";
     accumulateSleepAndRest();
-});
+}
+
 
 
 // Accumulate sleep and rest time
@@ -316,45 +318,50 @@ function accumulateSleepAndRest() {
 
 
 
-// Add a manual study slot
-document.getElementById('add-study-slot').addEventListener('click', addManualStudySlot);
+document.getElementById('add-time-slot').addEventListener('click', addTimeSlot);
 
-function addManualStudySlot() {
-    const start = document.getElementById('manual-study-start').value;
-    const end = document.getElementById('manual-study-end').value;
-    const errorElement = document.getElementById('manual-study-error');
+function addTimeSlot() {
+    const mode = document.getElementById('mode-selector').value; // Get selected mode
+
+    if (mode === 'sleep') {
+        addSleepTimeSlot(); // Call the dedicated sleep function
+    } else {
+        addActivityTimeSlot(mode); // Handle study/productive modes
+    }
+}
+
+function addActivityTimeSlot(mode) {
+    const start = document.getElementById('time-start').value;
+    const end = document.getElementById('time-end').value;
+    const errorElement = document.getElementById('time-slot-error');
 
     if (!start || !end) {
         errorElement.textContent = "Please provide both start and end times.";
         return;
     }
 
-    const studyStartTime = parseTime(start);
-    const studyEndTime = parseTime(end);
+    const startTime = parseTime(start);
+    const endTime = parseTime(end);
     const nowInSeconds = getCurrentTimeInSeconds();
 
-    if (studyEndTime <= studyStartTime) {
+    if (endTime <= startTime) {
         errorElement.textContent = "End time must be after start time.";
         return;
     }
-
-    if (studyEndTime > nowInSeconds) {
-        errorElement.textContent = "The study slot cannot extend beyond the current time.";
+    if (endTime > nowInSeconds) {
+        errorElement.textContent = "The time slot cannot extend beyond the current time.";
+        return;
+    }
+    if (startTime < sleepEndTime && endTime > sleepStartTime) {
+        errorElement.textContent = `${capitalize(mode)} time cannot overlap with sleep.`;
         return;
     }
 
-    const studyDuration = studyEndTime - studyStartTime;
+    const duration = endTime - startTime;
 
-    if (timers.rest >= studyDuration) {
-        timers.rest -= studyDuration;
-        timers.study += studyDuration;
-
-        // Compare with max study session and update if needed
-        if (studyDuration > maxStudyTime) {
-            maxStudyTime = studyDuration;
-            localStorage.setItem('maxStudyTime', maxStudyTime);
-            celebrateMaxStudy(); // Trigger celebration
-        }
+    if (timers.rest >= duration) {
+        timers.rest -= duration;
+        timers[mode] += duration;
 
         errorElement.textContent = "";
         saveData();
