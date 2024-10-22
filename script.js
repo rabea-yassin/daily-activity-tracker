@@ -363,6 +363,12 @@ function addActivityTimeSlot(mode) {
         timers.rest -= duration;
         timers[mode] += duration;
 
+        if (mode==='study'&&duration > maxStudyTime) {
+            maxStudyTime = duration;
+            localStorage.setItem('maxStudyTime', maxStudyTime);
+            celebrateMaxStudy(); // Trigger celebration
+        }
+
         errorElement.textContent = "";
         saveData();
         updateDisplay();
