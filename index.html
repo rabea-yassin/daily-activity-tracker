@@ -44,25 +44,27 @@
 
 
 
-            <div class="schedule">
-                <h3>Set Sleep Schedule</h3>
-                <label for="sleep-start">Sleep Start:</label>
-                <input type="time" id="sleep-start">
-                <label for="sleep-end">Sleep End:</label>
-                <input type="time" id="sleep-end">
-                <button id="set-sleep-schedule">Set Sleep Schedule</button>
-                <p id="sleep-schedule-error" style="color: red;"></p>
+            <div class="time-slot">
+                <h3>Add Time Slot</h3>
+
+                <label for="mode-selector">Select Mode:</label>
+                <select id="mode-selector">
+                    <option value="study">Study</option>
+                    <option value="productive">Productive</option>
+                    <option value="sleep">Sleep</option> <!-- Sleep Option -->
+                </select>
+
+                <label for="time-start">Start Time:</label>
+                <input type="time" id="time-start">
+
+                <label for="time-end">End Time:</label>
+                <input type="time" id="time-end">
+
+                <button id="add-time-slot">Add Time Slot</button>
+                <p id="time-slot-error" style="color: red;"></p>
             </div>
 
-            <div class="manual-study-slot">
-                <h3>Add Manual Study Slot</h3>
-                <label for="manual-study-start">Start Time:</label>
-                <input type="time" id="manual-study-start">
-                <label for="manual-study-end">End Time:</label>
-                <input type="time" id="manual-study-end">
-                <button id="add-study-slot">Add Study Slot</button>
-                <p id="manual-study-error" style="color: red;"></p>
-            </div>
+
 
             <div class="theme-toggle">
                 <button id="toggle-theme">Switch to Dark Mode</button>
