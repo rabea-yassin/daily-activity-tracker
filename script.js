@@ -1,3 +1,64 @@
+// Utility function: Capitalize the first letter of a string
+function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// Utility function: Parse a time string (HH:MM) into seconds, with validation
+function parseTime(timeStr) {
+    // Check format: must be HH:MM, both numeric, and valid ranges
+    if (!/^\d{1,2}:\d{2}$/.test(timeStr)) return null;
+    const [hrs, mins] = timeStr.split(':').map(Number);
+    if (
+        isNaN(hrs) || isNaN(mins) ||
+        hrs < 0 || hrs > 23 ||
+        mins < 0 || mins > 59
+    ) {
+        return null;
+    }
+    return hrs * 3600 + mins * 60;
+}
+
+// Utility function: Get the current time in seconds since midnight
+function getCurrentTimeInSeconds() {
+    const now = new Date();
+    return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+}
+
+// Utility function: Get chart colors based on theme
+function getChartColors() {
+    const isDark = document.body.classList.contains('dark-mode');
+    return isDark
+        ? ['#388e3c', '#6a1b9a', '#ffb300', '#1565c0'] // Darker palette for dark mode
+        : ['#4caf50', '#9c27b0', '#ff9800', '#2196f3']; // Original colors for light mode
+}
+
+// Utility function: Safely access localStorage with error handling
+function safeSetItem(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (e) {
+        console.error('localStorage setItem error:', e);
+        alert('Unable to save data. Your browser storage may be full or restricted.');
+    }
+}
+function safeGetItem(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (e) {
+        console.error('localStorage getItem error:', e);
+        alert('Unable to load data. Your browser storage may be restricted.');
+        return null;
+    }
+}
+function safeClear() {
+    try {
+        localStorage.clear();
+    } catch (e) {
+        console.error('localStorage clear error:', e);
+        alert('Unable to clear data. Your browser storage may be restricted.');
+    }
+}
+
 let timers = { study: 0, productive: 0, rest: 0, sleep: 0 };
 let currentMode = 'rest';
 let startTime = Date.now();
@@ -12,7 +73,8 @@ let animationFrameId; // To store requestAnimationFrame
 
 
 window.addEventListener('beforeunload', () => {
-    localStorage.setItem('lastActiveTime', Date.now().toString()); // Save the timestamp
+    // Save the timestamp before leaving the page (for recovery)
+    safeSetItem('lastActiveTime', Date.now().toString());
 });
 
 // Initialize the app on page load
@@ -36,15 +98,33 @@ window.onload = () => {
     setInterval(updateCurrentTime, 1000); // Update current time every second
     startTracking(); // Start accurate time tracking
 
+    // Accessibility improvements
+    document.getElementById('add-time-slot').setAttribute('aria-label', 'Add a new time slot for the selected activity');
+    document.getElementById('add-time-slot').setAttribute('tabindex', '0');
+    document.getElementById('clear-button').setAttribute('aria-label', 'Clear all activity data');
+    document.getElementById('clear-button').setAttribute('tabindex', '0');
+    document.getElementById('toggle-theme').setAttribute('aria-label', 'Toggle dark or light mode');
+    document.getElementById('toggle-theme').setAttribute('tabindex', '0');
+    document.getElementById('reset-max-study').setAttribute('aria-label', 'Reset maximum study time');
+    document.getElementById('reset-max-study').setAttribute('tabindex', '0');
+    // Add ARIA role and label to chart canvas
+    const chartCanvas = document.getElementById('activity-chart');
+    if (chartCanvas) {
+        chartCanvas.setAttribute('role', 'img');
+        chartCanvas.setAttribute('aria-label', 'Pie chart showing time spent on studying, productive time, resting, and sleeping');
+    }
+
 };
 
 function startTracking() {
-    function track() {
-        updateTimers(); // Update timers with accurate elapsed time
-        updateDisplay(); // Update the display in real-time
-        animationFrameId = requestAnimationFrame(track); // Keep tracking
+    // Only update timers and display every second for efficiency
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
     }
-    track(); // Start tracking immediately
+    setInterval(() => {
+        updateTimers();
+        updateDisplay();
+    }, 1000); // 1 second interval
 }
 
 // Stop tracking when necessary (optional)
@@ -62,39 +142,38 @@ function updateCurrentTime() {
 
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
-        recoverElapsedTime(); // Recover time when the tab becomes visible
-        startTracking(); // Resume tracking
+        recoverElapsedTime();
+        startTime = Date.now(); // Reset start time to now after recovering
     } else {
-        stopTracking(); // Stop tracking when the tab becomes hidden
+        localStorage.setItem('lastActiveTime', Date.now().toString());
     }
 });
 
 // Recover elapsed time from last known active time
 function recoverElapsedTime() {
-    const lastActiveTime = parseInt(localStorage.getItem('lastActiveTime'), 10) || startTime;
+    // Recover elapsed time from last known active time (handles tab inactivity)
+    const lastActiveTime = parseInt(safeGetItem('lastActiveTime'), 10) || startTime;
     const now = Date.now();
-    const elapsed = Math.floor((now - lastActiveTime) / 1000); // Calculate elapsed time
+    const elapsed = Math.floor((now - lastActiveTime) / 1000); // Calculate elapsed time in seconds
 
     if (elapsed > 0) {
-        timers[currentMode] += elapsed; // Increment the correct mode timer
-
+        timers[currentMode] += elapsed;
         if (currentMode === 'study') {
-            currentStudyTime += elapsed; // Track current study time
+            currentStudyTime += elapsed;
+            checkMaxStudyTime();
         }
-
-        startTime = now; // Reset the start time
-        saveData(); // Save the updated data
-        updateDisplay(); // Refresh the UI
+        updateDisplay();
+        saveData();
     }
 }
 
 
 
-// Load saved data from localStorage
 function loadSavedData() {
-    const savedData = JSON.parse(localStorage.getItem('activityData')) || { study: 0, productive: 0, rest: 0, sleep: 0 };
-    const savedMode = localStorage.getItem('currentMode') || 'rest';
-    const savedStartTime = parseInt(localStorage.getItem('startTime'), 10) || Date.now();
+    // Load saved data from localStorage, fallback to defaults if not found
+    const savedData = JSON.parse(safeGetItem('activityData')) || { study: 0, productive: 0, rest: 0, sleep: 0 };
+    const savedMode = safeGetItem('currentMode') || 'rest';
+    const savedStartTime = parseInt(safeGetItem('startTime'), 10) || Date.now();
 
     timers = savedData;
     currentMode = savedMode;
@@ -115,7 +194,7 @@ function startMode(mode) {
         checkMaxStudyTime(); // Check if we broke the max
     }
 
-    logTime(); // Log time for the previous mode
+    updateTimers(); // Ensure timers are updated before switching
     currentMode = mode;
     startTime = Date.now(); // Start tracking the new mode
 
@@ -185,28 +264,21 @@ function updateStudyAppearance() {
 
 // Log the time spent in the previous mode
 function logTime() {
-    const now = Date.now();
-    const elapsed = Math.floor((now - startTime) / 1000);
-
-    if (elapsed > 0) {
-        timers[currentMode] += elapsed;
-        if (currentMode === 'study') {
-            currentStudyTime += elapsed;
-        }
-    }
-
-    startTime = Date.now(); // Reset start time for new mode
+    updateTimers(); // Only update timers here
+    // No need to increment timers again
     saveData();
 }
 
 // Save timers and mode to localStorage
 function saveData() {
-    localStorage.setItem('activityData', JSON.stringify(timers));
+    // Save timers to localStorage with error handling
+    safeSetItem('activityData', JSON.stringify(timers));
 }
 
 function saveModeData() {
-    localStorage.setItem('currentMode', currentMode);
-    localStorage.setItem('startTime', startTime.toString());
+    // Save mode and start time to localStorage with error handling
+    safeSetItem('currentMode', currentMode);
+    safeSetItem('startTime', startTime.toString());
 }
 
 // Update the display and chart with the latest values
@@ -231,6 +303,10 @@ function formatTime(seconds) {
 
 // Initialize the Chart.js chart
 function initializeChart() {
+    // Destroy existing chart instance if it exists to prevent memory leaks
+    if (chart) {
+        chart.destroy();
+    }
     const ctx = document.getElementById('activity-chart').getContext('2d');
     chart = new Chart(ctx, {
         type: 'pie',
@@ -238,7 +314,7 @@ function initializeChart() {
             labels: ['Studying', 'Productive Time', 'Resting', 'Sleeping'],
             datasets: [{
                 data: [timers.study, timers.productive, timers.rest, timers.sleep],
-                backgroundColor: ['#4caf50', '#9c27b0', '#ff9800', '#2196f3']
+                backgroundColor: getChartColors()
             }]
         },
         options: {
@@ -253,8 +329,7 @@ function initializeChart() {
                     }
                 }
             }
-        }
-    });
+        }});
 }
 
 // Update the chart with new data whenever needed
@@ -277,6 +352,11 @@ function addSleepTimeSlot() {
 
     sleepStartTime = parseTime(start);
     sleepEndTime = parseTime(end);
+
+    if (sleepStartTime === null || sleepEndTime === null) {
+        errorElement.textContent = "Invalid time format. Please use HH:MM (00-23:59).";
+        return;
+    }
 
     // Allow for overnight sleep periods (e.g., 11:00 PM - 6:00 AM)
     if (sleepEndTime <= sleepStartTime) {
@@ -318,8 +398,6 @@ function accumulateSleepAndRest() {
 
 
 
-document.getElementById('add-time-slot').addEventListener('click', addTimeSlot);
-
 function addTimeSlot() {
     const mode = document.getElementById('mode-selector').value; // Get selected mode
 
@@ -344,6 +422,10 @@ function addActivityTimeSlot(mode) {
     const endTime = parseTime(end);
     const nowInSeconds = getCurrentTimeInSeconds();
 
+    if (startTime === null || endTime === null) {
+        errorElement.textContent = "Invalid time format. Please use HH:MM (00-23:59).";
+        return;
+    }
     if (endTime <= startTime) {
         errorElement.textContent = "End time must be after start time.";
         return;
@@ -377,54 +459,43 @@ function addActivityTimeSlot(mode) {
     }
 }
 
-// Parse a time string (HH:MM) into seconds
-function parseTime(timeStr) {
-    const [hrs, mins] = timeStr.split(':').map(Number);
-    return hrs * 3600 + mins * 60;
-}
+// Event listeners: Grouped for clarity
 
-// Get the current time in seconds since midnight
-function getCurrentTimeInSeconds() {
-    const now = new Date();
-    return now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
-}
+document.getElementById('add-time-slot').addEventListener('click', function handleAddTimeSlotClick() {
+    const addBtn = document.getElementById('add-time-slot');
+    addBtn.disabled = true;
+    const originalText = addBtn.textContent;
+    addBtn.textContent = 'Adding...';
+    setTimeout(() => { // Simulate async processing for UI feedback
+        addTimeSlot();
+        addBtn.disabled = false;
+        addBtn.textContent = originalText;
+    }, 200); // 200ms delay for user feedback
+});
 
-// Capitalize the first letter of a string
-function capitalize(str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-}
-
-// Clear all data
 document.getElementById('clear-button').addEventListener('click', () => {
     timers = { study: 0, productive: 0, rest: 0, sleep: 0 };
-    localStorage.clear();
+    safeClear();
     startTime = Date.now();
     updateDisplay();
 });
 
-// Handle dark mode toggle
-// Handle dark mode toggle
 document.getElementById('toggle-theme').addEventListener('click', () => {
     const body = document.body;
     const themeButton = document.getElementById('toggle-theme');
-
-    // Toggle the 'dark-mode' class on the body
     body.classList.toggle('dark-mode');
-
-    // Update the button text based on the new theme
-    if (body.classList.contains('dark-mode')) {
-        themeButton.textContent = 'Switch to Light Mode';
-        localStorage.setItem('theme', 'dark');
-    } else {
-        themeButton.textContent = 'Switch to Dark Mode';
-        localStorage.setItem('theme', 'light');
+    const isDark = body.classList.contains('dark-mode');
+    safeSetItem('theme', isDark ? 'dark' : 'light');
+    themeButton.textContent = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    // Update chart colors on theme change
+    if (chart) {
+        chart.data.datasets[0].backgroundColor = getChartColors();
+        chart.update();
     }
 });
 
-
-// Reset max study time and update display
 document.getElementById('reset-max-study').addEventListener('click', () => {
     maxStudyTime = 0;
-    localStorage.setItem('maxStudyTime', maxStudyTime);
+    safeSetItem('maxStudyTime', maxStudyTime);
     updateDisplay();
 });
