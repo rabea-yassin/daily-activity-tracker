@@ -20,11 +20,14 @@
 
     <div class="content">
         <div class="left-panel">
-            <canvas id="activity-chart"></canvas>
+            <div class="chart-card">
+                <h3 class="chart-title">Activity Breakdown</h3>
+                <canvas id="activity-chart"></canvas>
+            </div>
             <div class="timers">
                 <h3>Current Mode: <span id="current-mode">Resting</span></h3>
                 <p>Studying: <span id="study-time">0h 0m 0s</span></p>
-                <p>Productive Time: <span id="productive-time">0h 0m 0s</span></p> <!-- New Mode -->
+                <p>Productive Time: <span id="productive-time">0h 0m 0s</span></p>
                 <p>Resting: <span id="rest-time">0h 0m 0s</span></p>
                 <p>Sleeping: <span id="sleep-time">0h 0m 0s</span></p>
                 <p id="current-study">Current Study: 0h 0m 0s</p>
@@ -34,40 +37,40 @@
 
         <div class="right-panel">
             <div class="buttons">
-                <button onclick="startMode('study')">Start Studying</button>
-                <button onclick="startMode('productive')">Start Productive Time</button> <!-- New Mode -->
-                <button onclick="startMode('rest')">Start Resting</button>
-                <button onclick="startMode('sleep')">Start Sleeping</button>
-                <button id="clear-button">Clear Data</button>
-                <button id="reset-max-study">Reset Max Study Time</button>
+                <button onclick="startMode('study')"><span class="btn-icon">📚</span> Start Studying</button>
+                <button onclick="startMode('productive')"><span class="btn-icon">💼</span> Start Productive Time</button>
+                <button onclick="startMode('rest')"><span class="btn-icon">🛋️</span> Start Resting</button>
+                <button onclick="startMode('sleep')"><span class="btn-icon">😴</span> Start Sleeping</button>
+                <button id="clear-button"><span class="btn-icon">🗑️</span> Clear Data</button>
+                <button id="reset-max-study"><span class="btn-icon">🔄</span> Reset Max Study Time</button>
             </div>
 
-
-
-            <div class="time-slot">
+            <div class="time-slot-card">
                 <h3>Add Time Slot</h3>
-
-                <label for="mode-selector">Select Mode:</label>
-                <select id="mode-selector">
-                    <option value="sleep">Sleep</option> <!-- Sleep Option -->
-                    <option value="study">Study</option>
-                    <option value="productive">Productive</option>
-                </select>
-
-                <label for="time-start">Start Time:</label>
-                <input type="time" id="time-start">
-
-                <label for="time-end">End Time:</label>
-                <input type="time" id="time-end">
-
-                <button id="add-time-slot">Add Time Slot</button>
-                <p id="time-slot-error" style="color: red;"></p>
+                <form class="time-slot-form" onsubmit="event.preventDefault(); addTimeSlot();">
+                    <div class="form-group">
+                        <label for="mode-selector">Select Mode:</label>
+                        <select id="mode-selector">
+                            <option value="sleep">Sleep</option>
+                            <option value="study">Study</option>
+                            <option value="productive">Productive</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="time-start">Start Time:</label>
+                        <input type="time" id="time-start">
+                    </div>
+                    <div class="form-group">
+                        <label for="time-end">End Time:</label>
+                        <input type="time" id="time-end">
+                    </div>
+                    <button id="add-time-slot" type="submit"><span class="btn-icon">➕</span> Add Time Slot</button>
+                    <p id="time-slot-error" style="color: red;"></p>
+                </form>
             </div>
-
-
 
             <div class="theme-toggle">
-                <button id="toggle-theme">Switch to Dark Mode</button>
+                <button id="toggle-theme"><span class="btn-icon">🌓</span> Switch to Dark Mode</button>
             </div>
         </div>
     </div>
