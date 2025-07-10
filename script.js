@@ -160,36 +160,30 @@ function recoverElapsedTime() {
         timers[currentMode] += elapsed;
         if (currentMode === 'study') {
             currentStudyTime += elapsed;
-            checkMaxStudyTime();
+            // Removed: checkMaxStudyTime();
         }
         updateDisplay();
         saveData();
     }
 }
 
-
-
-function loadSavedData() {
-    // Load saved data from localStorage, fallback to defaults if not found
-    const savedData = JSON.parse(safeGetItem('activityData')) || { study: 0, productive: 0, rest: 0, sleep: 0 };
-    const savedMode = safeGetItem('currentMode') || 'rest';
-    const savedStartTime = parseInt(safeGetItem('startTime'), 10) || Date.now();
-
-    timers = savedData;
-    currentMode = savedMode;
-    startTime = savedStartTime;
-
-    recoverStudyTime(); // Recover study time without duplicate increment
-
-    // We no longer increment timers here to prevent double counting
-    startTime = Date.now(); // Reset start time to now
-    saveData(); // Save data without adding extra time
+function recoverStudyTime() {
+    if (currentMode === 'study') {
+        const savedStartTime = parseInt(localStorage.getItem('studyStartTime'), 10);
+        if (savedStartTime) {
+            const elapsed = Math.floor((Date.now() - savedStartTime) / 1000);
+            currentStudyTime += elapsed;
+            timers.study += elapsed; // Accumulate the study time correctly
+            // Removed: checkMaxStudyTime();
+        }
+    }
 }
 
 // Start a specific mode and update UI immediately
 function startMode(mode) {
     if (mode === currentMode) return; // Prevent switching to the same mode
 
+    // Only check max study time when leaving study mode
     if (currentMode === 'study') {
         checkMaxStudyTime(); // Check if we broke the max
     }
