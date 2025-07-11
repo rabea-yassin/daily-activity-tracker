@@ -504,3 +504,18 @@ document.getElementById('reset-max-study').addEventListener('click', () => {
     safeSetItem('maxStudyTime', maxStudyTime);
     updateDisplay();
 });
+
+// Load saved data from localStorage, fallback to defaults if not found
+function loadSavedData() {
+    // Load saved data from localStorage, fallback to defaults if not found
+    const savedData = JSON.parse(safeGetItem('activityData')) || { study: 0, productive: 0, rest: 0, sleep: 0 };
+    const savedMode = safeGetItem('currentMode') || 'rest';
+    const savedStartTime = parseInt(safeGetItem('startTime'), 10) || Date.now();
+
+    timers = savedData;
+    currentMode = savedMode;
+    startTime = savedStartTime;
+
+    recoverStudyTime(); // Only recover study time if needed
+    // Do not increment timers here to avoid double counting
+}
