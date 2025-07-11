@@ -157,10 +157,21 @@ function recoverElapsedTime() {
     const elapsed = Math.floor((now - lastActiveTime) / 1000); // Calculate elapsed time in seconds
 
     if (elapsed > 0) {
+        if (elapsed > 10800) { // More than 3 hours
+            const stillInMode = confirm(`Are you still ${capitalize(currentMode)}? Click OK to continue, Cancel to reset all timers.`);
+            if (!stillInMode) {
+                timers = { study: 0, productive: 0, rest: 0, sleep: 0 };
+                currentStudyTime = 0;
+                maxStudyTime = 0;
+                safeClear();
+                startTime = Date.now();
+                updateDisplay();
+                return;
+            }
+        }
         timers[currentMode] += elapsed;
         if (currentMode === 'study') {
             currentStudyTime += elapsed;
-            // Removed: checkMaxStudyTime();
         }
         updateDisplay();
         saveData();
