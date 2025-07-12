@@ -151,21 +151,32 @@ document.addEventListener('visibilitychange', () => {
 
 // Recover elapsed time from last known active time
 function recoverElapsedTime() {
-    // Recover elapsed time from last known active time (handles tab inactivity)
     const lastActiveTime = parseInt(safeGetItem('lastActiveTime'), 10) || startTime;
     const now = Date.now();
-    const elapsed = Math.floor((now - lastActiveTime) / 1000); // Calculate elapsed time in seconds
+    const elapsed = Math.floor((now - lastActiveTime) / 1000);
 
     if (elapsed > 0) {
-        if (elapsed > 10800) { // More than 3 hours
-            const stillInMode = confirm(`Are you still ${capitalize(currentMode)}? Click OK to continue, Cancel to reset all timers.`);
-            if (!stillInMode) {
+        if (elapsed >= 28800) { // 8 hours
+            const isNewDay = confirm('Is this a new day?');
+            if (isNewDay) {
                 timers = { study: 0, productive: 0, rest: 0, sleep: 0 };
                 currentStudyTime = 0;
                 maxStudyTime = 0;
                 safeClear();
                 startTime = Date.now();
                 updateDisplay();
+                return;
+            }
+        }
+        if (elapsed > 10800 && currentMode !== 'rest') { // 3 hours, not rest
+            const stillInMode = confirm(`Are you still ${capitalize(currentMode)}? Click OK to continue, Cancel to switch to Resting.`);
+            if (!stillInMode) {
+                timers.rest += elapsed;
+                startTime = Date.now();
+                currentMode = 'rest';
+                saveModeData();
+                updateDisplay();
+                saveData();
                 return;
             }
         }
@@ -185,7 +196,6 @@ function recoverStudyTime() {
             const elapsed = Math.floor((Date.now() - savedStartTime) / 1000);
             currentStudyTime += elapsed;
             timers.study += elapsed; // Accumulate the study time correctly
-            // Removed: checkMaxStudyTime();
         }
     }
 }
@@ -355,19 +365,36 @@ function addSleepTimeSlot() {
         return;
     }
 
-    sleepStartTime = parseTime(start);
-    sleepEndTime = parseTime(end);
-
-    if (sleepStartTime === null || sleepEndTime === null) {
+    const parsedStart = parseTime(start);
+    const parsedEnd = parseTime(end);
+    if (parsedStart === null || parsedEnd === null) {
         errorElement.textContent = "Invalid time format. Please use HH:MM (00-23:59).";
         return;
     }
 
-    // Allow for overnight sleep periods (e.g., 11:00 PM - 6:00 AM)
-    if (sleepEndTime <= sleepStartTime) {
-        sleepEndTime += 24 * 3600; // Add 24 hours to the end time to handle overnight
+    let duration = parsedEnd - parsedStart;
+    if (duration < 0) duration += 24 * 3600; // Overnight sleep
+
+    // If sleep time has already been set, just add duration to sleep and subtract from rest
+    if (timers.sleep > 0) {
+        if (timers.rest < duration) {
+            errorElement.textContent = "Not enough resting time to allocate to sleep.";
+            return;
+        }
+        timers.sleep += duration;
+        timers.rest = Math.max(0, timers.rest - duration);
+        errorElement.textContent = "";
+        saveData();
+        updateDisplay();
+        return;
     }
 
+    // If sleep time has NOT been set, proceed as before
+    sleepStartTime = parsedStart;
+    sleepEndTime = parsedEnd;
+    if (sleepEndTime <= sleepStartTime) {
+        sleepEndTime += 24 * 3600;
+    }
     errorElement.textContent = "";
     accumulateSleepAndRest();
 }
@@ -519,3 +546,22 @@ function loadSavedData() {
     recoverStudyTime(); // Only recover study time if needed
     // Do not increment timers here to avoid double counting
 }
+
+// Add "Now" button for manual time slot
+window.addEventListener('DOMContentLoaded', () => {
+    const endInput = document.getElementById('time-end');
+    if (endInput && !document.getElementById('now-btn')) {
+        const nowBtn = document.createElement('button');
+        nowBtn.id = 'now-btn';
+        nowBtn.type = 'button';
+        nowBtn.textContent = 'Now';
+        nowBtn.style.marginLeft = '8px';
+        nowBtn.onclick = function() {
+            const now = new Date();
+            const hh = String(now.getHours()).padStart(2, '0');
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            endInput.value = `${hh}:${mm}`;
+        };
+        endInput.parentNode.insertBefore(nowBtn, endInput.nextSibling);
+    }
+});
